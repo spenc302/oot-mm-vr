@@ -1,0 +1,14 @@
+diff -ruN a/libultraship/cmake/dependencies/windows-vcpkg.cmake b/libultraship/cmake/dependencies/windows-vcpkg.cmake
+--- a/libultraship/cmake/dependencies/windows-vcpkg.cmake	2026-10-23 12:10:42.932137158 +0000
++++ b/libultraship/cmake/dependencies/windows-vcpkg.cmake	2026-10-23 12:10:42.993005285 +0000
+@@ -13,5 +13,9 @@
+ endif()
+ 
+ 	vcpkg_bootstrap()
+-	vcpkg_install_packages(zlib bzip2 sdl2 glew libzip nlohmann-json tinyxml2 spdlog)    
++	set(LUS_VCPKG_PACKAGES zlib bzip2 sdl2 glew libzip nlohmann-json tinyxml2 spdlog)
++	if (MMVR_ENABLE)
++		list(APPEND LUS_VCPKG_PACKAGES openxr-loader)
++	endif()
++	vcpkg_install_packages(${LUS_VCPKG_PACKAGES})    
+ endif()

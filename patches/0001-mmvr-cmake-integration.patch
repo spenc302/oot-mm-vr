@@ -1,0 +1,40 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index eb3c3875..7214d8f7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -373,6 +373,19 @@ endif()
+ add_subdirectory(libultraship ${CMAKE_BINARY_DIR}/libultraship SYSTEM)
+ quiet_target(libultraship "${WARNING_OVERRIDE}")
+ target_compile_definitions(libultraship PUBLIC INCLUDE_MPQ_SUPPORT)
++# Optional VR runtime (shared with Majora's Mask VR). Lives beside this tree in src/mmvr-runtime.
++option(MMVR_ENABLE "Build the MMVR OpenXR runtime integration" OFF)
++if(MMVR_ENABLE)
++    if(NOT WIN32 AND NOT ANDROID)
++        message(FATAL_ERROR "MMVR supports Windows D3D11 and Android GLES")
++    endif()
++    # Added after libultraship so its vcpkg step has already installed OpenXR (see patch 0003).
++    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../mmvr-runtime" "${CMAKE_BINARY_DIR}/mmvr-runtime")
++    # runtime.cpp includes imgui.h; take the include path from libultraship's ImGui target.
++    target_link_libraries(mmvr-runtime PRIVATE ImGui)
++    target_link_libraries(libultraship PRIVATE mmvr-runtime)
++    target_compile_definitions(libultraship PRIVATE MMVR_ENABLE)
++endif()
+ add_subdirectory(soh)
+ 
+ set_property(TARGET soh PROPERTY APPIMAGE_DESKTOP_FILE_TERMINAL YES)
+diff --git a/soh/CMakeLists.txt b/soh/CMakeLists.txt
+index f356d214..4cd0af8d 100644
+--- a/soh/CMakeLists.txt
++++ b/soh/CMakeLists.txt
+@@ -228,6 +228,11 @@ set(ALL_FILES
+ ################################################################################
+ add_executable(${PROJECT_NAME} ${ALL_FILES})
+ 
++if(MMVR_ENABLE)
++    target_link_libraries(${PROJECT_NAME} PRIVATE mmvr-runtime)
++    target_compile_definitions(${PROJECT_NAME} PRIVATE MMVR_ENABLE)
++endif()
++
+ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+ use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
+ endif()

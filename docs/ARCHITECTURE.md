@@ -1,12 +1,12 @@
 # Architecture and milestones
 
 ## How Majora's Mask VR is wired (observed in v0.36)
-- `src/mmvr-runtime`: OpenXR session, stereo/projection, frame and GPU timing, GLES multiview, input and
+- `mmvr-runtime` plus `mmvr-runtime0`: shared OpenXR core, session, stereo/projection, frame and GPU timing, GLES multiview, input and
   controller profiles, comfort/locomotion helpers (~18k lines, 118 files). Exposes ~28 `extern "C" MMVR_*` functions.
 - `2s2h/VR`: ~34k lines of game-side code that calls the runtime from player/actor/camera code.
 - Vendored, modified `libultraship`: ~220 `MMVR` references, mostly `interpreter.cpp` (99),
   `gfx_opengl.cpp` (51), `gfx_direct3d11.cpp` (21), `Fast3dWindow.cpp` (10).
-- CMake: option `MMVR_ENABLE`, `add_subdirectory(../mmvr-runtime)`, link to libultraship and the game target.
+- CMake: option `MMVR_ENABLE`, `add_subdirectory(../../mmvr-runtime)` from the Shipwright root, link to libultraship and the game target.
   `patches/0001` reproduces this for Shipwright (verified to apply to the pinned commit; not built).
 
 ## Known gaps
@@ -17,13 +17,21 @@
 - The runtime's self-checks compile with MSVC/NDK clang; g++ rejects `core_tests.cpp` (same on MM's original).
   They have not been run here.
 - No Quest 2 performance baseline exists for either game.
+- Quest Touch actions are now copied into OoT's native pad input on the game thread; the fallback path keeps
+  regular keyboard/gamepad input when XR actions are inactive.
+- OoT marks `Play_Main` as gameplay, enabling the runtime's gameplay presentation. OoT still has no
+  game-specific camera callback, hand-tracking extension, tracked-hand renderer, or full item/combat adapter.
+- Stereo gameplay no longer depends on MM's separate HUD pointer: OoT's native frame is rendered directly to
+  the stereo views, and the runtime's separate HUD quad is omitted when no overlay list is supplied.
+- Quest standalone remains unverified: Android OpenXR dependency discovery, app lifecycle, and APK packaging
+  need end-to-end work and a device build.
 
 ## Milestones
-- M0 (this commit): layout, pinned upstream, CMake patch, stub `OotVR` hooks.
+- M0: layout, pinned upstream, CMake patch, stub `OotVR` hooks.
 - M1a (done, unbuilt): `patches/0002` ports MM's libultraship VR hooks onto Shipwright's pinned libultraship.
-- M1b (needs your Windows build): full SoH build with `MMVR_ENABLE`, runtime links, OoT renders in stereo with head tracking on Quest 2.
-- M2: VR menu/settings, controllers, ROM import and Quest packaging (adapt MM's `platform/android`).
-- M3: hands, items, combat, climbing, ocarina.
+- M1b (in progress): compile/link the runtime and libultraship hooks, then verify stereo gameplay and Touch-to-N64 input on PCVR.
+- M2: head-relative OoT camera callback, bare-hand tracking/visuals, VR settings, and Quest Android dependency/build/package lifecycle.
+- M3: game-specific hands, items, bow/hookshot, combat, climbing, ocarina, and comfort/accessibility polish.
 - M4: split runtime into game-agnostic core + per-game adapters; shared settings so both games match.
 
 ## patches/0002 (libultraship hooks)
@@ -42,8 +50,9 @@ The two baselines differ in only 7 files, so only one hunk conflicted (the custo
   `CMake/MMVR-AndroidDependencies.cmake`; not ported yet (M2).
 
 ## Changes since M1a
-- `patches/0003`: adds `openxr-loader` to libultraship's Windows vcpkg list when `MMVR_ENABLE` is set
-  (MM VR's notes say `openxr`; the standard vcpkg port is `openxr-loader`, unverified).
+- `patches/0003`: adds the vcpkg port `openxr-loader` to libultraship's Windows package list when `MMVR_ENABLE` is set.
+- `patches/0004`: feeds active OpenXR pad state into OoT's `Input` after native pad acquisition and signals gameplay
+  when `Play_Main` is running. The native input path remains active if XR input is unavailable.
 - `patches/0001` reordered: runtime is added after libultraship (so vcpkg has run), links `ImGui` for
   `imgui.h`, then links into libultraship and the game.
 - Runtime copy: MM's published CMake references `tests/periodic-report-check.cpp`, which MM's repo omits, so that

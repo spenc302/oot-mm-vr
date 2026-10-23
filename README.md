@@ -5,12 +5,12 @@ Ocarina of Time VR for Quest, structured the same way as
 
 | This repo | Majora's Mask VR equivalent | Role |
 |---|---|---|
-| `src/mmvr-runtime/` | `src/mmvr-runtime/` | Shared OpenXR runtime (copied from MM VR; being split into generic core vs game-specific) |
+| `mmvr-runtime/`, `mmvr-runtime0/` | `src/mmvr-runtime/` | Shared OpenXR core and platform/session implementation |
 | `src/shipwright/soh/soh/VR/` | `src/2ship2harkinian/mm/2s2h/VR/` | OoT game-side VR hooks (player, items, camera, combat) |
 | `src/shipwright/` (fetched) | `src/2ship2harkinian/` | Ship of Harkinian upstream, pinned in `UPSTREAM.json`, **not committed** |
 | `patches/` | modified vendored files | Changes applied to upstream by `tools/fetch-upstream.sh` |
 
-**Status: milestone 1b, awaiting first Windows build.** Scaffold, libultraship hook patches (apply cleanly, not yet built), build script, test plan (`TESTING.md`). Nothing here renders in VR yet. See `docs/ARCHITECTURE.md`.
+**Status: early gameplay integration, not yet built.** Quest Touch actions are connected to OoT's N64 pad state, and gameplay scenes are wired to the runtime's stereo renderer without relying on Majora's Mask's HUD pointer. The runtime has controller poses and stereo rendering, but OoT's head-relative camera, tracked-hand rendering/actions, item/combat interactions, and Quest APK packaging are not implemented. See `docs/ARCHITECTURE.md` and `TESTING.md`.
 
 Start: `tools/fetch-upstream.sh`, then see `BUILDING.md`.
 

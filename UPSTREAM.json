@@ -1,0 +1,15 @@
+{
+  "shipwright": {
+    "url": "https://github.com/HarbourMasters/Shipwright.git",
+    "commit": "2827fc2a0f56a9cdc18a87adf8c1bb7e91315f41"
+  },
+  "submodules": {
+    "libultraship": "da6daf1a50a5e46d6641408d52227e31e85e46df",
+    "torch": "2ab12fe9660aec04e02ee89fe81baed304a1a1d6"
+  },
+  "runtimeSource": {
+    "repo": "https://github.com/fulldivegames/Majoras-Mask-VR",
+    "commit": "2a8b1e04c6dfe4c10478bebd5ee3434f865f5ed8",
+    "copied": "src/mmvr-runtime/*.h, *.cpp, *.inc, *.json, CMakeLists.txt (no save_states, no assets)"
+  }
+}

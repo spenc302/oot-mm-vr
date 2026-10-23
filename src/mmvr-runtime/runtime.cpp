@@ -19,6 +19,7 @@
 #include "view_tools.h"
 #include "controller_profiles.h"
 #include "control_bindings.h"
+#include "hand_gestures.h"
 #include "device_info.h"
 #include <unordered_map>
 #include "ui.h"
@@ -39,6 +40,7 @@
 #include "gles_bridge.h"
 #include "native_bounds_gles_test.h"
 #include "paired_vertex_bench.h"
+#include "hand_renderer_gles.h"
 #include <SDL.h>
 #include <jni.h>
 #include <android/log.h>
@@ -360,6 +362,17 @@ class TheaterRuntime {
     XrInstance instance = XR_NULL_HANDLE;
     XrSystemId system = XR_NULL_SYSTEM_ID;
     XrSession session = XR_NULL_HANDLE;
+    XrHandTrackerEXT handTrackers[2]{};
+    PFN_xrCreateHandTrackerEXT createHandTracker = nullptr;
+    PFN_xrDestroyHandTrackerEXT destroyHandTracker = nullptr;
+    PFN_xrLocateHandJointsEXT locateHandJoints = nullptr;
+    XrHandJointLocationEXT handJointLocations[2][XR_HAND_JOINT_COUNT_EXT]{};
+    bool handJointActive[2]{}, handTrackingSupported = false;
+    bool controllerPoseActive[2]{};
+    bool gestureOnlyInput = false;
+    bool handLocateWarning = false;
+    HandGestureInput handGestureInput;
+    HandGesturePad handGesturePad{};
     XrSpace localSpace = XR_NULL_HANDLE, viewSpace = XR_NULL_HANDLE, floorSpace = XR_NULL_HANDLE;
     float calibratedFloorEyeHeight = 0;
     XrSwapchain chain = XR_NULL_HANDLE;
@@ -725,6 +738,9 @@ class TheaterRuntime {
     uint32_t eyeWidth = 0, eyeHeight = 0;
     XrSwapchain acquiredChain = XR_NULL_HANDLE;
     std::array<XrView, 2> views{ { { XR_TYPE_VIEW }, { XR_TYPE_VIEW } } };
+#ifdef __ANDROID__
+    HandRendererGLES handRenderer;
+#endif
     bool stereoFrame = false, revealFrame = false, hadReveal = false;
     XrPosef revealPose{};
     uint64_t revealOrigin=0;
@@ -938,6 +954,8 @@ class TheaterRuntime {
             mappedControls = {};
             logicalButtons = {};
             logicalChanged = {};
+            handJointActive[0] = handJointActive[1] = false;
+            handGestureInput.Reset();
             throwArmed = false;
             throwRequested = false;
             inputRelease = true;
@@ -946,6 +964,7 @@ class TheaterRuntime {
         RefreshProfiles();
         if (!OwnsGoronRoll()) goronRoll.Update(0, -1, false);
         CacheInput();
+        SampleHandJoints();
         inputFocused = true;
         if (inputController != DominantController(settings)) {
             sceneRelease = false;
@@ -967,9 +986,10 @@ class TheaterRuntime {
         pad.active = true;
         auto stick = Stick(move);
         auto item = Stick(items);
-        gripValue = Float(buttons[7]);
-        leftGripValue = Float(buttons[6]);
-        useValue = Float(shield);
+        const bool gestureOnly = handGesturePad.active && !controllerPoseActive[0] && !controllerPoseActive[1];
+        gripValue = gestureOnly ? handGesturePad.grips[1] : Float(buttons[7]);
+        leftGripValue = gestureOnly ? handGesturePad.grips[0] : Float(buttons[6]);
+        useValue = gestureOnly ? handGesturePad.triggers[1] : Float(shield);
         bool clicked = false;
         if (systemMenuOpenRequested && drawUi) {
             systemMenuOpenRequested = false;
@@ -1326,12 +1346,103 @@ class TheaterRuntime {
             pad = NativeChoiceInput(pad, stick.x, stick.y, item.x, item.y,
                                     Bool(buttons[0]) || Bool(buttons[2]), Bool(buttons[1]), owlMapSelection);
         }
+        if (handGesturePad.active && !controllerPoseActive[0] && !controllerPoseActive[1]) {
+            pad.buttons |= handGesturePad.buttons;
+            pad.x = handGesturePad.x;
+            pad.y = handGesturePad.y;
+        }
         pad = ItemWheelInput(pad, SelectorGrip() > .25f && canSelect && !holsterGripClaimed && !originalThirdPerson && !ocarina && !climbing && !dialogueChoice);
         bool changed = false;
         if (Bool(buttons[5], &changed) && changed)
             centerPending = true;
         std::lock_guard lock(padMutex);
         padLatch.Update(pad);
+    }
+    void InitializeHandTracking() {
+        if (!handTrackingSupported || !Extension(XR_EXT_HAND_TRACKING_EXTENSION_NAME))
+            return;
+        auto load = [&](const char* name, PFN_xrVoidFunction* function) {
+            return XR_SUCCEEDED(xrGetInstanceProcAddr(instance, name, function)) && *function;
+        };
+        if (!load("xrCreateHandTrackerEXT", reinterpret_cast<PFN_xrVoidFunction*>(&createHandTracker)) ||
+            !load("xrDestroyHandTrackerEXT", reinterpret_cast<PFN_xrVoidFunction*>(&destroyHandTracker)) ||
+            !load("xrLocateHandJointsEXT", reinterpret_cast<PFN_xrVoidFunction*>(&locateHandJoints))) {
+            Log("Hand tracking extension enabled but one or more entry points are unavailable.");
+            return;
+        }
+        for (int hand = 0; hand < 2; ++hand) {
+            XrHandTrackerCreateInfoEXT create{ XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT };
+            create.hand = hand == 0 ? XR_HAND_LEFT_EXT : XR_HAND_RIGHT_EXT;
+            create.handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT;
+            const XrResult result = createHandTracker(session, &create, &handTrackers[hand]);
+            if (XR_FAILED(result)) {
+                Log("Could not create OpenXR hand tracker: " + std::to_string(result));
+                for (auto& tracker : handTrackers) {
+                    if (tracker) destroyHandTracker(tracker);
+                    tracker = XR_NULL_HANDLE;
+                }
+                return;
+            }
+        }
+        Log("OpenXR hand tracking is available.");
+    }
+    void DestroyHandTracking() {
+        if (destroyHandTracker) {
+            for (auto& tracker : handTrackers) {
+                if (tracker) destroyHandTracker(tracker);
+                tracker = XR_NULL_HANDLE;
+            }
+        }
+    }
+    void SampleHandJoints() {
+        handJointActive[0] = handJointActive[1] = false;
+        controllerPoseActive[0] = controllerPoseActive[1] = false;
+        if (!locateHandJoints || !handTrackers[0] || !handTrackers[1]) {
+            handGesturePad = {};
+            gestureOnlyInput = false;
+            return;
+        }
+
+        for (int hand = 0; hand < 2; ++hand) {
+            std::fill_n(handJointLocations[hand], XR_HAND_JOINT_COUNT_EXT, XrHandJointLocationEXT{});
+            XrActionStateGetInfo get{ XR_TYPE_ACTION_STATE_GET_INFO };
+            get.action = handPoseActions[hand];
+            XrActionStatePose pose{ XR_TYPE_ACTION_STATE_POSE };
+            Check(xrGetActionStatePose(session, &get, &pose), "Read controller pose state");
+            controllerPoseActive[hand] = pose.isActive;
+
+            XrHandJointsLocateInfoEXT locate{ XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT };
+            locate.baseSpace = localSpace;
+            locate.time = displayTime;
+            XrHandJointLocationsEXT locations{ XR_TYPE_HAND_JOINT_LOCATIONS_EXT };
+            locations.jointCount = XR_HAND_JOINT_COUNT_EXT;
+            locations.jointLocations = handJointLocations[hand];
+            const XrResult result = locateHandJoints(handTrackers[hand], &locate, &locations);
+            if (XR_FAILED(result)) {
+                if (!handLocateWarning) {
+                    Log("OpenXR hand joint sampling failed: " + std::to_string(result));
+                    handLocateWarning = true;
+                }
+                continue;
+            }
+            handJointActive[hand] = locations.isActive != XR_FALSE;
+            for (int joint = 0; joint < XR_HAND_JOINT_COUNT_EXT; ++joint) {
+                const auto valid = XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
+                const bool jointValid = (handJointLocations[hand][joint].locationFlags & valid) == valid;
+                if (!jointValid)
+                    handJointLocations[hand][joint] = {};
+                if (joint == XR_HAND_JOINT_WRIST_EXT || joint == XR_HAND_JOINT_PALM_EXT ||
+                    joint == XR_HAND_JOINT_THUMB_TIP_EXT || joint == XR_HAND_JOINT_INDEX_TIP_EXT ||
+                    joint == XR_HAND_JOINT_MIDDLE_TIP_EXT || joint == XR_HAND_JOINT_RING_TIP_EXT ||
+                    joint == XR_HAND_JOINT_LITTLE_TIP_EXT)
+                    handJointActive[hand] = handJointActive[hand] && jointValid;
+            }
+        }
+
+        handGesturePad = handGestureInput.Update(handJointLocations, handJointActive, trackingEpoch);
+        gestureOnlyInput = handGesturePad.active && !controllerPoseActive[0] && !controllerPoseActive[1];
+        if (!gestureOnlyInput)
+            handGesturePad = {};
     }
     void MakeEyes(uint32_t w, uint32_t h) {
         if (eyes[0].handle && eyeWidth == w && eyeHeight == h)
@@ -1845,6 +1956,7 @@ class TheaterRuntime {
         for (auto space : aimSpaces)
             if (space)
                 xrDestroySpace(space);
+        DestroyHandTracking();
         if (floorSpace)
             xrDestroySpace(floorSpace);
         if (viewSpace)
@@ -1897,7 +2009,11 @@ class TheaterRuntime {
         get.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
         Check(xrGetSystem(instance, &get, &system), "Get headset (connect PC VR first)");
         XrSystemProperties sys{ XR_TYPE_SYSTEM_PROPERTIES };
+        XrSystemHandTrackingPropertiesEXT handProperties{ XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT };
+        if (Extension(XR_EXT_HAND_TRACKING_EXTENSION_NAME))
+            sys.next = &handProperties;
         Check(xrGetSystemProperties(instance, system, &sys), "Read system");
+        handTrackingSupported = handProperties.supportsHandTracking;
         deviceInfo.headset = sys.systemName;
         Log("Headset: " + deviceInfo.headset + " vendor=" + std::to_string(sys.vendorId));
         maxWidth = renderLimitWidth = sys.graphicsProperties.maxSwapchainImageWidth;
@@ -1969,6 +2085,7 @@ class TheaterRuntime {
         create.next = &binding;
         create.systemId = system;
         Check(xrCreateSession(instance, &create, &session), "Create session with game device");
+        InitializeHandTracking();
         for (auto type : { XR_REFERENCE_SPACE_TYPE_LOCAL, XR_REFERENCE_SPACE_TYPE_VIEW }) {
             XrReferenceSpaceCreateInfo space{ XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
             space.referenceSpaceType = type;
@@ -2302,6 +2419,12 @@ class TheaterRuntime {
                 tracking.triggers[1] = useValue;
                 tracking.grips[0] = leftGripValue;
                 tracking.grips[1] = gripValue;
+                if (gestureOnlyInput) {
+                    tracking.triggers[0] = handGesturePad.triggers[0];
+                    tracking.triggers[1] = handGesturePad.triggers[1];
+                    tracking.grips[0] = handGesturePad.grips[0];
+                    tracking.grips[1] = handGesturePad.grips[1];
+                }
                 tracking.snapYaw = snapYaw;
                 tracking.origin = origin;
                 tracking.calibratedFloorEyeHeight = calibratedFloorEyeHeight;
@@ -2343,6 +2466,25 @@ class TheaterRuntime {
                         tracking.aims[hand] = location.pose;
                         tracking.aimValid[hand] =
                             actionState.isActive && (location.locationFlags & poseValid) == poseValid;
+                        tracking.handSkeletonValid[hand] = handJointActive[hand];
+                        for (int joint = 0; joint < XR_HAND_JOINT_COUNT_EXT; ++joint) {
+                            const auto& sample = handJointLocations[hand][joint];
+                            const auto jointValid = (sample.locationFlags & poseValid) == poseValid;
+                            tracking.handJointValid[hand][joint] = handJointActive[hand] && jointValid;
+                            if (tracking.handJointValid[hand][joint]) {
+                                tracking.handJoints[hand][joint] = sample.pose;
+                                tracking.handJointRadii[hand][joint] = sample.radius;
+                            }
+                        }
+                        if (tracking.handSkeletonValid[hand] && !tracking.handValid[hand]) {
+                            tracking.hands[hand] = handJointLocations[hand][XR_HAND_JOINT_PALM_EXT].pose;
+                            tracking.handValid[hand] = true;
+                            tracking.handTracked[hand] = true;
+                        }
+                        if (tracking.handSkeletonValid[hand] && !tracking.aimValid[hand]) {
+                            tracking.aims[hand] = handJointLocations[hand][XR_HAND_JOINT_INDEX_PROXIMAL_EXT].pose;
+                            tracking.aimValid[hand] = true;
+                        }
                     }
                     if (pausePositionPending) {
                         pausePose = TheaterPose(head.pose);
@@ -2566,6 +2708,9 @@ class TheaterRuntime {
                             else draw(false);
                             CaptureOrderingEye(*source,pixelCheck,i);
                         }
+#ifdef __ANDROID__
+                        handRenderer.Draw(*renderedSource, views[i], tracking);
+#endif
                         const auto eyeAfterDraw = eyeTrace ? std::chrono::steady_clock::now() :
                             std::chrono::steady_clock::time_point{};
                         if (eyeTrace) eyeDrawMs[i] = std::chrono::duration<double, std::milli>(

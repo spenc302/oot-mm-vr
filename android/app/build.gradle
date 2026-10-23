@@ -1,0 +1,57 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.ootvr.game"
+    compileSdk 35
+    ndkVersion "27.2.12479018"
+
+    defaultConfig {
+        applicationId "com.ootvr.game"
+        minSdk 29
+        targetSdk 32
+        versionCode 1
+        versionName "0.1.0"
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+        externalNativeBuild {
+            cmake {
+                arguments "-DMMVR_ENABLE=ON", "-DANDROID_STL=c++_shared", "-DUSE_OPENGLES=ON"
+                targets "soh"
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file("../../src/shipwright/CMakeLists.txt")
+            version "3.30.3"
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ["src/main/java", "$buildDir/generated/sdl/java"]
+            res.srcDirs = ["src/main/res", "$buildDir/generated/sdl/res"]
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}

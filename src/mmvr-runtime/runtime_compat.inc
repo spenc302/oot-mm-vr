@@ -40,6 +40,8 @@ std::vector<const char*> Extensions(std::initializer_list<const char*> required)
     supportsRefresh = has(XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
     if (supportsRefresh)
         enabledExtensions.push_back(XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
+    if (has(XR_EXT_HAND_TRACKING_EXTENSION_NAME))
+        enabledExtensions.push_back(XR_EXT_HAND_TRACKING_EXTENSION_NAME);
 #ifdef __ANDROID__
     if (has(XR_EXT_PERFORMANCE_SETTINGS_EXTENSION_NAME))
         enabledExtensions.push_back(XR_EXT_PERFORMANCE_SETTINGS_EXTENSION_NAME);

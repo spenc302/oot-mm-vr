@@ -26,10 +26,7 @@ diff --git a/soh/CMakeLists.txt b/soh/CMakeLists.txt
 index f356d214..4cd0af8d 100644
 --- a/soh/CMakeLists.txt
 +++ b/soh/CMakeLists.txt
-@@ -228,6 +228,11 @@ set(ALL_FILES
- ################################################################################
- add_executable(${PROJECT_NAME} ${ALL_FILES})
- 
+@@ -228,3 +228,8 @@
 +if(MMVR_ENABLE)
 +    target_link_libraries(${PROJECT_NAME} PRIVATE mmvr-runtime)
 +    target_compile_definitions(${PROJECT_NAME} PRIVATE MMVR_ENABLE)

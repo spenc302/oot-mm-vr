@@ -33,6 +33,7 @@
 #include "billboard_group.h"
 #include "input.h"
 #include "control_bindings.h"
+#include "hand_gestures.h"
 #include "ui.h"
 #include "menu_search.h"
 #include "hud_layout.h"
@@ -64,6 +65,40 @@ bool close(float a,float b){return std::abs(a-b)<.0001f;}
 namespace mmvr { Settings& GetSettings() noexcept { static Settings s; return s; } }
 #include "geometry_culling_tests.h"
 int main(){
+    {
+        XrHandJointLocationEXT hands[2][XR_HAND_JOINT_COUNT_EXT]{};
+        bool tracked[2]{true, true};
+        auto set = [&](int hand, XrHandJointEXT joint, float x, float y, float z) {
+            hands[hand][joint].pose.position = {x, y, z};
+        };
+        for (int hand = 0; hand < 2; ++hand) {
+            set(hand, XR_HAND_JOINT_WRIST_EXT, hand ? .2f : -.2f, 1.f, 0.f);
+            set(hand, XR_HAND_JOINT_PALM_EXT, hand ? .2f : -.2f, 1.05f, 0.f);
+            set(hand, XR_HAND_JOINT_THUMB_TIP_EXT, hand ? .2f : -.2f, 1.05f, .02f);
+            set(hand, XR_HAND_JOINT_INDEX_TIP_EXT, hand ? .2f : -.2f, 1.05f, -.12f);
+            set(hand, XR_HAND_JOINT_MIDDLE_TIP_EXT, hand ? .2f : -.2f, 1.05f, -.12f);
+            set(hand, XR_HAND_JOINT_RING_TIP_EXT, hand ? .2f : -.2f, 1.05f, -.12f);
+            set(hand, XR_HAND_JOINT_LITTLE_TIP_EXT, hand ? .2f : -.2f, 1.05f, -.12f);
+        }
+        mmvr::HandGestureInput input;
+        auto sample = input.Update(hands, tracked, 1);
+        check(sample.active && sample.buttons == 0 && sample.x == 0 && sample.y == 0);
+        set(1, XR_HAND_JOINT_INDEX_TIP_EXT, .2f, 1.05f, .03f);
+        sample = input.Update(hands, tracked, 1);
+        check((sample.buttons & 0x8000) != 0 && sample.triggers[1] == 1);
+        set(1, XR_HAND_JOINT_INDEX_TIP_EXT, .2f, 1.05f, .055f);
+        sample = input.Update(hands, tracked, 1);
+        check((sample.buttons & 0x8000) != 0); // Pinch remains latched in the release band.
+        set(1, XR_HAND_JOINT_INDEX_TIP_EXT, .2f, 1.05f, .08f);
+        sample = input.Update(hands, tracked, 1);
+        check((sample.buttons & 0x8000) == 0);
+        set(0, XR_HAND_JOINT_WRIST_EXT, .42f, 1.22f, 0.f);
+        sample = input.Update(hands, tracked, 1);
+        check(sample.x > 0 && sample.y > 0);
+        tracked[0] = tracked[1] = false;
+        sample = input.Update(hands, tracked, 1);
+        check(!sample.active && sample.buttons == 0);
+    }
     check(mmvr::SwordChargeEffect(.1f,true,0).alpha==0);
     check(mmvr::SwordChargeEffect(.125f,true,0).alpha==127);
     check(mmvr::SwordChargeEffect(.16f,true,0).alpha==255);

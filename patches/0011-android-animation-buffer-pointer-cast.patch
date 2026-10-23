@@ -1,0 +1,12 @@
+diff --git a/soh/src/code/z_skelanime.c b/soh/src/code/z_skelanime.c
+index e48259e15..b617c63ce 100644
+--- a/soh/src/code/z_skelanime.c
++++ b/soh/src/code/z_skelanime.c
+@@ -907,6 +907,6 @@ void AnimationContext_SetLoadFrame(PlayState* play, LinkAnimationHeader* animati
+         if (animData == NULL) {
+             return;
+         }
+-        memcpy(ram, (uintptr_t)animData + (((sizeof(Vec3s) * limbCount + 2) * frame)), sizeof(Vec3s) * limbCount + 2);
++        memcpy(ram, (const u8*)animData + (((sizeof(Vec3s) * limbCount + 2) * frame)), sizeof(Vec3s) * limbCount + 2);
+     }
+ }

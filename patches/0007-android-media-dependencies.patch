@@ -1,0 +1,28 @@
+diff --git a/soh/CMakeLists.txt b/soh/CMakeLists.txt
+index f356d2148..7f0d70ddc 100644
+--- a/soh/CMakeLists.txt
++++ b/soh/CMakeLists.txt
+@@ -685,6 +685,23 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "CafeOS")
+     target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
+         ${DEVKITPRO}/portlibs/wiiu/include/
+     )
++elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
++    set(THREADS_PREFER_PTHREAD_FLAG ON)
++    find_package(Threads REQUIRED)
++    set(ADDITIONAL_LIBRARY_DEPENDENCIES
++        "libultraship;"
++        "torch;"
++        SDL2::SDL2
++        SDL2_net::SDL2_net
++        Ogg::ogg
++        Vorbis::vorbis
++        Vorbis::vorbisenc
++        Vorbis::vorbisfile
++        Opus::opus
++        OpusFile::Opusfile
++        ${CMAKE_DL_LIBS}
++        Threads::Threads
++    )
+ else()
+     find_package(SDL2)
+     set(THREADS_PREFER_PTHREAD_FLAG ON)

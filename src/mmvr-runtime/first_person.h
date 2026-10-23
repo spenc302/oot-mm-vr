@@ -8,6 +8,10 @@ struct TrackingFrame {
     XrPosef head{}, origin{};
     XrPosef hands[2]{}, aims[2]{};
     bool handValid[2]{}, aimValid[2]{}, handTracked[2]{};
+    XrPosef handJoints[2][XR_HAND_JOINT_COUNT_EXT]{};
+    float handJointRadii[2][XR_HAND_JOINT_COUNT_EXT]{};
+    bool handJointValid[2][XR_HAND_JOINT_COUNT_EXT]{};
+    bool handSkeletonValid[2]{};
     XrVector3f handVelocity[2]{};
     bool handVelocityValid[2]{};
     float grips[2]{}, triggers[2]{};

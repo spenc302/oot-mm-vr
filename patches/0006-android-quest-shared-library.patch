@@ -1,0 +1,24 @@
+diff --git a/soh/CMakeLists.txt b/soh/CMakeLists.txt
+index 4cd0af8d..c56c91a2 100644
+--- a/soh/CMakeLists.txt
++++ b/soh/CMakeLists.txt
+@@ -226,9 +226,18 @@
+ ################################################################################
+ # Target
+ ################################################################################
+-add_executable(${PROJECT_NAME} ${ALL_FILES})
++if(ANDROID AND MMVR_ENABLE)
++    add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
++    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "main")
++    set_source_files_properties(
++        "${CMAKE_CURRENT_SOURCE_DIR}/src/code/main.c"
++        PROPERTIES COMPILE_DEFINITIONS "main=SDL_main"
++    )
++else()
++    add_executable(${PROJECT_NAME} ${ALL_FILES})
++endif()
+
+ if(MMVR_ENABLE)
+     target_link_libraries(${PROJECT_NAME} PRIVATE mmvr-runtime)
+     target_compile_definitions(${PROJECT_NAME} PRIVATE MMVR_ENABLE)
+ endif()

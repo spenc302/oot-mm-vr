@@ -1,0 +1,13 @@
+diff --git a/soh/src/code/audio_load.c b/soh/src/code/audio_load.c
+index d7de0389a..99b613aa7 100644
+--- a/soh/src/code/audio_load.c
++++ b/soh/src/code/audio_load.c
+@@ -981,7 +981,7 @@ s32 AudioLoad_Dma(OSIoMesg* mesg, u32 priority, s32 direction, uintptr_t devAddr
+         return -1;
+     }
+ 
+-    memcpy(ramAddr, devAddr, size);
++    memcpy((void*)ramAddr, (const void*)devAddr, size);
+ 
+     return 0;
+ }

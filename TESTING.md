@@ -1,8 +1,7 @@
 # PCVR gameplay and controller input
 
-Goal of this milestone: launch OoT through OpenXR on Windows, render gameplay in stereo, and verify Quest Touch
-input reaches the existing N64 controls. The OoT first-person camera callback is implemented but has not been
-validated in a headset; bare-hand tracking/interactions and Quest standalone packaging remain out of scope.
+This milestone covers OoT's Windows OpenXR path and the initial Quest standalone build. The OoT first-person
+camera callback and Quest APK have compile/build coverage, but no headset gameplay has been validated.
 
 `Play_Main` now signals gameplay to the runtime; title/menu scenes remain theater. OoT does not provide the
 MM-specific HUD display-list pointer, so its complete native gameplay frame is rendered to the stereo views
@@ -29,4 +28,24 @@ OpenXR input is not focused and maps the runtime's Touch actions into the game's
 Send back: the build log tail on failure; on a run, `mmvr.log` and `mmvr-frame-timing.json` from the working
 directory, plus what you saw (black screen, no headset session, theater visible, crash).
 
-Quest standalone remains unverified and needs separate Android dependency, packaging, and device validation.
+## Quest 2 APK smoke test
+
+Build with `tools/build-quest.ps1 -Variant Debug`; the arm64 APK is
+`android/app/build/outputs/apk/debug/app-debug.apk`. The APK contains no game ROM or copyrighted game assets.
+
+On a Quest 2 with developer mode/ADB enabled:
+
+1. Install `app-debug.apk` with `adb install -r`.
+2. Launch the app and provide your own legally obtained `oot.o2r` using the game's supported data/import path.
+   The first-run game-data flow has not yet been verified on Android.
+3. Check that the app enters VR, the head-tracked stereo view renders and recenters correctly, and the Touch
+   controller fallback still drives OoT's native controls.
+4. If the runtime exposes `XR_EXT_hand_tracking`, enable hand tracking in Quest settings and test left-hand
+   wrist movement for the analog stick; left pinch/fist for Z/L; right pinch/middle-finger pinch/fist for
+   A/trigger, C-down, and B. Verify tracking loss releases held buttons. Check the basic hand proxies and note
+   their lack of world-depth occlusion.
+5. Record launch/crash behavior, controller/hand input, visual artifacts, and performance.
+
+The app was not installed or run because no Android/Quest device is currently connected. Send back the build log
+tail on failure; after an on-device run, share `mmvr.log` and `mmvr-frame-timing.json` if available, along with
+what you saw (black screen, no headset session, missing game data, tracking/input issues, or crash).

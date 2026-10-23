@@ -22,19 +22,22 @@
   regular keyboard/gamepad input when XR actions are inactive.
 - OoT marks `Play_Main` as gameplay, enabling the runtime's gameplay presentation. Its first-person camera
   callback anchors the view at Link's head and yields to native views outside the main gameplay camera; this
-  has compile coverage only and needs headset validation. There is no hand-tracking extension, tracked-hand
-  renderer, or full item/combat adapter.
+  has compile coverage only and needs headset validation.
 - Stereo gameplay no longer depends on MM's separate HUD pointer: OoT's native frame is rendered directly to
   the stereo views, and the runtime's separate HUD quad is omitted when no overlay list is supplied.
-- Quest standalone remains unverified: Android OpenXR dependency discovery, app lifecycle, and APK packaging
-  need end-to-end work and a device build.
+- Android OpenXR dependencies, SDL2-based Activity packaging, GLES configuration, and the arm64 Debug APK
+  build are implemented and locally verified. The APK has not been launched on a Quest, and Android game-data
+  provisioning, runtime hand tracking, controls, visuals, and performance remain unverified on device.
+- `XR_EXT_hand_tracking` is optional. If available, the runtime samples joints, maps basic pinch/fist gestures
+  to the N64 pad, and draws unoccluded GLES hand proxies. Touch controller input remains available as fallback;
+  this is a first-pass gesture map, not a complete physical interaction system.
 
 ## Milestones
 - M0: layout, pinned upstream, CMake patch, stub `OotVR` hooks.
 - M1a (done): `patches/0002` ports MM's libultraship VR hooks onto Shipwright's pinned libultraship.
 - M1b (build done): runtime, libultraship hooks, and game compile/link; next verify stereo gameplay and Touch-to-N64 input on PCVR.
-- M2: (partial) head-relative OoT camera callback implemented; headset validation, bare-hand tracking/visuals,
-  VR settings, and Quest Android dependency/build/package lifecycle remain.
+- M2: (partial) head-relative OoT camera callback, Quest APK build, optional hand tracking and basic proxy visuals
+  implemented; headset validation, hand/controller UX tuning, VR settings, and Android game-data provisioning remain.
 - M3: game-specific hands, items, bow/hookshot, combat, climbing, ocarina, and comfort/accessibility polish.
 - M4: split runtime into game-agnostic core + per-game adapters; shared settings so both games match.
 
@@ -49,9 +52,8 @@ The two baselines differ in only 7 files, so only one hunk conflicted (the custo
 - Left out as not VR-related: MM's config/resource/archive hardening (atomic config writes, resource loader and
   manager changes, stb checksum pinning, Context/CrashHandler edits). Port separately if wanted.
 - Verified: applies cleanly with `git apply --check` to the pinned libultraship.
-- Not verified: that it compiles, or that Shipwright-specific code paths (for example OoT's own display-list and
-  shader usage) behave with the hooks. Android needs the OpenXR loader and SDL2 targets MM defines in
-  `CMake/MMVR-AndroidDependencies.cmake`; not ported yet (M2).
+- Android additionally builds pinned SDL2_net, Ogg, Vorbis, Opus, and OpusFile dependencies from CMake because
+  Shipwright's Android dependency path does not provide these audio/network targets.
 
 ## Changes since M1a
 - `patches/0003`: adds the vcpkg port `openxr-loader` to libultraship's Windows package list when `MMVR_ENABLE` is set.

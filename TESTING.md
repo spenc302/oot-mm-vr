@@ -1,8 +1,8 @@
 # PCVR gameplay and controller input
 
 Goal of this milestone: launch OoT through OpenXR on Windows, render gameplay in stereo, and verify Quest Touch
-input reaches the existing N64 controls. Not expected yet: a head-relative OoT camera,
-bare-hand tracking/interactions, or Quest standalone packaging.
+input reaches the existing N64 controls. The OoT first-person camera callback is implemented but has not been
+validated in a headset; bare-hand tracking/interactions and Quest standalone packaging remain out of scope.
 
 `Play_Main` now signals gameplay to the runtime; title/menu scenes remain theater. OoT does not provide the
 MM-specific HUD display-list pointer, so its complete native gameplay frame is rendered to the stereo views
@@ -13,14 +13,16 @@ OpenXR input is not focused and maps the runtime's Touch actions into the game's
 2. Make your own `oot.o2r` from your ROM as Shipwright documents.
 3. Set your OpenXR runtime active (Oculus app, or SteamVR), connect the headset, run `soh.exe`.
 4. Use F8 to recenter and F7 to toggle stereo. Verify ordinary play, menus, and transitions with the Touch
-   controllers; use keyboard/gamepad as a fallback. Do not treat F9 first-person mode as implemented: OoT
-   does not yet provide the runtime's required camera callback.
+   controllers; use keyboard/gamepad as a fallback. F9 requests the first-person view; verify camera height,
+   head movement, turning, and that cutscenes/sub-camera views retain their native camera.
 
 ## Verified locally
 
 - Windows x64 Release configuration and full `soh.exe` build with `MMVR_ENABLE=ON`.
 - Runtime and game-side `OotVR.cpp` compile and link with the OpenXR loader.
 - Seven runtime/core CTest checks pass with `MMVR_BUILD_TESTS=ON`.
+- OoT now supplies a head-anchored first-person camera view during main-camera gameplay; the callback yields
+  to native camera views outside that state. This has compile coverage only, not headset/gameplay validation.
 - The executable was not launched: a user-provided `oot.o2r` and an active OpenXR headset/runtime are needed
   to validate actual gameplay and controller behavior.
 

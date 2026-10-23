@@ -10,7 +10,7 @@ Ocarina of Time VR for Quest, structured the same way as
 | `src/shipwright/` (fetched) | `src/2ship2harkinian/` | Ship of Harkinian upstream, pinned in `UPSTREAM.json`, **not committed** |
 | `patches/` | modified vendored files | Changes applied to upstream by `tools/fetch-upstream.sh` |
 
-**Status: Windows Release build verified; headset gameplay is not yet verified.** Quest Touch actions are connected to OoT's N64 pad state, and gameplay scenes are wired to the runtime's stereo renderer without relying on Majora's Mask's HUD pointer. The runtime and game compile, and all seven runtime/core self-checks pass. OoT's head-relative camera, tracked-hand rendering/actions, item/combat interactions, and Quest APK packaging are not implemented. See `docs/ARCHITECTURE.md` and `TESTING.md`.
+**Status: Windows Release build verified; headset gameplay is not yet verified.** Quest Touch actions are connected to OoT's N64 pad state, and gameplay scenes are wired to the runtime's stereo renderer without relying on Majora's Mask's HUD pointer. An OoT head-anchored first-person camera callback is implemented, but needs headset validation. Tracked-hand rendering/actions, item/combat interactions, and Quest APK packaging are not implemented. See `docs/ARCHITECTURE.md` and `TESTING.md`.
 
 Start: `tools/fetch-upstream.sh`, then see `BUILDING.md`.
 

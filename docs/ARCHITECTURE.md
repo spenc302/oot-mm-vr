@@ -20,8 +20,10 @@
 - The executable has not been run with a ROM or headset.
 - Quest Touch actions are now copied into OoT's native pad input on the game thread; the fallback path keeps
   regular keyboard/gamepad input when XR actions are inactive.
-- OoT marks `Play_Main` as gameplay, enabling the runtime's gameplay presentation. OoT still has no
-  game-specific camera callback, hand-tracking extension, tracked-hand renderer, or full item/combat adapter.
+- OoT marks `Play_Main` as gameplay, enabling the runtime's gameplay presentation. Its first-person camera
+  callback anchors the view at Link's head and yields to native views outside the main gameplay camera; this
+  has compile coverage only and needs headset validation. There is no hand-tracking extension, tracked-hand
+  renderer, or full item/combat adapter.
 - Stereo gameplay no longer depends on MM's separate HUD pointer: OoT's native frame is rendered directly to
   the stereo views, and the runtime's separate HUD quad is omitted when no overlay list is supplied.
 - Quest standalone remains unverified: Android OpenXR dependency discovery, app lifecycle, and APK packaging
@@ -31,7 +33,8 @@
 - M0: layout, pinned upstream, CMake patch, stub `OotVR` hooks.
 - M1a (done): `patches/0002` ports MM's libultraship VR hooks onto Shipwright's pinned libultraship.
 - M1b (build done): runtime, libultraship hooks, and game compile/link; next verify stereo gameplay and Touch-to-N64 input on PCVR.
-- M2: head-relative OoT camera callback, bare-hand tracking/visuals, VR settings, and Quest Android dependency/build/package lifecycle.
+- M2: (partial) head-relative OoT camera callback implemented; headset validation, bare-hand tracking/visuals,
+  VR settings, and Quest Android dependency/build/package lifecycle remain.
 - M3: game-specific hands, items, bow/hookshot, combat, climbing, ocarina, and comfort/accessibility polish.
 - M4: split runtime into game-agnostic core + per-game adapters; shared settings so both games match.
 

@@ -54,10 +54,10 @@ index 00000000..a18cc789
 +#endif
 diff --git a/soh/soh/VR/OotVR.cpp b/soh/soh/VR/OotVR.cpp
 new file mode 100644
-index 00000000..a0cb4c73
+index 00000000..236f4bd5
 --- /dev/null
 +++ b/soh/soh/VR/OotVR.cpp
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,114 @@
 +#include "OotVR.h"
 +
 +#include "global.h"
@@ -65,10 +65,41 @@ index 00000000..a0cb4c73
 +#ifdef MMVR_ENABLE
 +#include "runtime.h"
 +
++extern "C" PlayState* gPlayState;
++
 +namespace {
 +bool sPadActive = false;
 +int sGameplayScene = -1;
 +OSContPad sPreviousVrPad{};
++
++mmvr::CameraFrame UpdateCamera(const mmvr::TrackingFrame& tracking) {
++    mmvr::CameraFrame frame{};
++    PlayState* play = gPlayState;
++    if (play == nullptr || play->activeCamera != CAM_ID_MAIN) {
++        return frame;
++    }
++
++    Camera* camera = play->cameraPtrs[CAM_ID_MAIN];
++    Player* player = camera != nullptr ? camera->player : nullptr;
++    if (player == nullptr || camera->status != CAM_STAT_ACTIVE || play->view.viewingPtr == nullptr) {
++        return frame;
++    }
++
++    const Vec3f& position = player->actor.world.pos;
++    const s16 yaw = player->actor.shape.rot.y;
++    const float eyeX = position.x;
++    const float eyeY = position.y + Player_GetHeight(player);
++    const float eyeZ = position.z;
++    const float lookX = eyeX + Math_SinS(yaw);
++    const float lookZ = eyeZ + Math_CosS(yaw);
++
++    guLookAtF(frame.view.m, eyeX, eyeY, eyeZ, lookX, eyeY, lookZ, 0.0f, 1.0f, 0.0f);
++    frame.active = true;
++    frame.viewAddress = play->view.viewingPtr;
++    frame.trackingScale = 1.0f;
++    frame.trackingTime = tracking.timeSeconds;
++    return frame;
++}
 +
 +void UpdatePadEdges(Input* input) {
 +    input->press.button = input->cur.button & ~input->prev.button;
@@ -86,10 +117,12 @@ index 00000000..a0cb4c73
 +    sPadActive = false;
 +    sGameplayScene = -1;
 +    sPreviousVrPad = {};
++    mmvr::SetCameraCallback(nullptr);
 +}
 +
 +extern "C" void OotVR_Shutdown(void) {
 +    sPadActive = false;
++    mmvr::SetCameraCallback(nullptr);
 +}
 +
 +extern "C" int OotVR_Active(void) {
@@ -127,6 +160,7 @@ index 00000000..a0cb4c73
 +        return;
 +    }
 +    sGameplayScene = nextScene;
++    mmvr::SetCameraCallback(nextScene ? UpdateCamera : nullptr);
 +    mmvr::SetScene(nextScene, nullptr, nullptr);
 +}
 +#else

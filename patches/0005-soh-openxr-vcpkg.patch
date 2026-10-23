@@ -1,0 +1,12 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -105,3 +105,7 @@
+     vcpkg_bootstrap()
+-    vcpkg_install_packages(zlib bzip2 libzip libpng sdl2 sdl2-net glew glfw3 nlohmann-json tinyxml2 spdlog libogg libvorbis opus opusfile)
++    set(SOH_VCPKG_PACKAGES zlib bzip2 libzip libpng sdl2 sdl2-net glew glfw3 nlohmann-json tinyxml2 spdlog libogg libvorbis opus opusfile)
++    if (MMVR_ENABLE)
++        list(APPEND SOH_VCPKG_PACKAGES openxr-loader)
++    endif()
++    vcpkg_install_packages(${SOH_VCPKG_PACKAGES})
+     if (CMAKE_C_COMPILER_LAUNCHER MATCHES "ccache|sccache")

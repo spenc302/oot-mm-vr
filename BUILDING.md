@@ -1,7 +1,7 @@
 # Building
 
-The controller/gameplay integration and platform-runtime CMake wiring are awaiting their first build.
-No full SoH build or Quest APK has been verified.
+The Windows x64 Release build has been verified with Visual Studio 2022, CMake, and vcpkg OpenXR.
+No headset gameplay or Quest APK has been verified.
 
 1. Run `tools/fetch-upstream.sh` (Linux/WSL2 or Git Bash; needs git and python3). Pass `--no-submodules`
    to skip libultraship/torch while only checking the patch/layout. WSL users: keep the checkout in the
@@ -11,6 +11,8 @@ No full SoH build or Quest APK has been verified.
 3. Toolchain versions for the runtime on Windows/Quest follow MM VR's `BUILDING.md`
    (CMake 3.26+, VS 2022, OpenXR via vcpkg; Quest: JDK 17, Android SDK 35, NDK 27, Ninja).
 
-The shared core and platform/session sources live together in `src/mmvr-runtime/`. Not yet verified:
-any full SoH build with `MMVR_ENABLE`; compilation,
-linking, Quest standalone packaging, and on-device behavior still need validation.
+The shared core and platform/session sources live together in `src/mmvr-runtime/`. To build runtime
+self-checks, configure with `-DMMVR_BUILD_TESTS=ON`, build the `mmvr-*checks` and
+`mmvr-runtime-tests` targets, then run `ctest --test-dir <build>/mmvr-runtime -C Release
+--output-on-failure`. Quest standalone packaging, headset gameplay, and on-device behavior still need
+validation.

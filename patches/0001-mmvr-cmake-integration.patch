@@ -12,7 +12,7 @@ index eb3c3875..7214d8f7 100644
 +    if(NOT WIN32 AND NOT ANDROID)
 +        message(FATAL_ERROR "MMVR supports Windows D3D11 and Android GLES")
 +    endif()
-+    # Added after libultraship so its vcpkg step has already installed OpenXR (see patch 0003).
++    # Added after libultraship so vcpkg has already installed OpenXR (see patch 0005).
 +    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../mmvr-runtime" "${CMAKE_BINARY_DIR}/mmvr-runtime")
 +    # runtime.cpp includes imgui.h; take the include path from libultraship's ImGui target.
 +    target_link_libraries(mmvr-runtime PRIVATE ImGui)

@@ -11,6 +11,6 @@ No full SoH build or Quest APK has been verified.
 3. Toolchain versions for the runtime on Windows/Quest follow MM VR's `BUILDING.md`
    (CMake 3.26+, VS 2022, OpenXR via vcpkg; Quest: JDK 17, Android SDK 35, NDK 27, Ninja).
 
-The platform/session sources currently live in `mmvr-runtime0/` and are wired into the shared target
-by `mmvr-runtime/CMakeLists.txt`. Not yet verified: any full SoH build with `MMVR_ENABLE`; compilation,
+The shared core and platform/session sources live together in `src/mmvr-runtime/`. Not yet verified:
+any full SoH build with `MMVR_ENABLE`; compilation,
 linking, Quest standalone packaging, and on-device behavior still need validation.

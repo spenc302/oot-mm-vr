@@ -2,7 +2,7 @@
 
 | Path | Source | License |
 |---|---|---|
-| `mmvr-runtime/`, `mmvr-runtime0/` | Copied from fulldivegames/Majoras-Mask-VR @ `2a8b1e0` (code only) | CC0 1.0 per that repo's `LICENSE` |
+| `src/mmvr-runtime/` | Copied from fulldivegames/Majoras-Mask-VR @ `2a8b1e0` (code only) | CC0 1.0 per that repo's `LICENSE` |
 | `src/shipwright/soh/soh/VR/`, `patches/`, `tools/`, `docs/` | This project | Not yet chosen |
 | `src/shipwright/` (everything else) | HarbourMasters/Shipwright, fetched, not committed | Upstream ships no license file; its submodules have their own |
 

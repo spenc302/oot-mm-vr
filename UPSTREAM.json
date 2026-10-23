@@ -10,6 +10,6 @@
   "runtimeSource": {
     "repo": "https://github.com/fulldivegames/Majoras-Mask-VR",
     "commit": "2a8b1e04c6dfe4c10478bebd5ee3434f865f5ed8",
-    "copied": "shared runtime source across mmvr-runtime/ and mmvr-runtime0/ (no save_states, no assets)"
+    "copied": "shared runtime source in src/mmvr-runtime/ (no save_states, no assets)"
   }
 }

@@ -5,7 +5,7 @@ Ocarina of Time VR for Quest, structured the same way as
 
 | This repo | Majora's Mask VR equivalent | Role |
 |---|---|---|
-| `mmvr-runtime/`, `mmvr-runtime0/` | `src/mmvr-runtime/` | Shared OpenXR core and platform/session implementation |
+| `src/mmvr-runtime/` | `src/mmvr-runtime/` | Shared OpenXR core and platform/session implementation |
 | `src/shipwright/soh/soh/VR/` | `src/2ship2harkinian/mm/2s2h/VR/` | OoT game-side VR hooks (player, items, camera, combat) |
 | `src/shipwright/` (fetched) | `src/2ship2harkinian/` | Ship of Harkinian upstream, pinned in `UPSTREAM.json`, **not committed** |
 | `patches/` | modified vendored files | Changes applied to upstream by `tools/fetch-upstream.sh` |

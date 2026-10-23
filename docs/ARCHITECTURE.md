@@ -1,12 +1,12 @@
 # Architecture and milestones
 
 ## How Majora's Mask VR is wired (observed in v0.36)
-- `mmvr-runtime` plus `mmvr-runtime0`: shared OpenXR core, session, stereo/projection, frame and GPU timing, GLES multiview, input and
+- `src/mmvr-runtime`: shared OpenXR core, session, stereo/projection, frame and GPU timing, GLES multiview, input and
   controller profiles, comfort/locomotion helpers (~18k lines, 118 files). Exposes ~28 `extern "C" MMVR_*` functions.
 - `2s2h/VR`: ~34k lines of game-side code that calls the runtime from player/actor/camera code.
 - Vendored, modified `libultraship`: ~220 `MMVR` references, mostly `interpreter.cpp` (99),
   `gfx_opengl.cpp` (51), `gfx_direct3d11.cpp` (21), `Fast3dWindow.cpp` (10).
-- CMake: option `MMVR_ENABLE`, `add_subdirectory(../../mmvr-runtime)` from the Shipwright root, link to libultraship and the game target.
+- CMake: option `MMVR_ENABLE`, `add_subdirectory(../mmvr-runtime)` from the Shipwright root, link to libultraship and the game target.
   `patches/0001` reproduces this for Shipwright (verified to apply to the pinned commit; not built).
 
 ## Known gaps

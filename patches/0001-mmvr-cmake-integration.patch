@@ -6,14 +6,14 @@ index eb3c3875..7214d8f7 100644
  add_subdirectory(libultraship ${CMAKE_BINARY_DIR}/libultraship SYSTEM)
  quiet_target(libultraship "${WARNING_OVERRIDE}")
  target_compile_definitions(libultraship PUBLIC INCLUDE_MPQ_SUPPORT)
-+# Optional VR runtime (shared with Majora's Mask VR). Lives at the project root in mmvr-runtime.
++# Optional VR runtime (shared with Majora's Mask VR). Lives in src/mmvr-runtime.
 +option(MMVR_ENABLE "Build the MMVR OpenXR runtime integration" OFF)
 +if(MMVR_ENABLE)
 +    if(NOT WIN32 AND NOT ANDROID)
 +        message(FATAL_ERROR "MMVR supports Windows D3D11 and Android GLES")
 +    endif()
 +    # Added after libultraship so its vcpkg step has already installed OpenXR (see patch 0003).
-+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../mmvr-runtime" "${CMAKE_BINARY_DIR}/mmvr-runtime")
++    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../mmvr-runtime" "${CMAKE_BINARY_DIR}/mmvr-runtime")
 +    # runtime.cpp includes imgui.h; take the include path from libultraship's ImGui target.
 +    target_link_libraries(mmvr-runtime PRIVATE ImGui)
 +    target_link_libraries(libultraship PRIVATE mmvr-runtime)

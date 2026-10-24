@@ -1,0 +1,40 @@
+diff -ruN a/soh/soh/VR/OotVR.cpp b/soh/soh/VR/OotVR.cpp
+--- a/soh/soh/VR/OotVR.cpp
++++ b/soh/soh/VR/OotVR.cpp
+@@ -13,11 +13,6 @@
+ bool sPadActive = false;
+ int sGameplayScene = -1;
+ OSContPad sPreviousVrPad{};
+-
+-float TrackingYaw(const XrQuaternionf& orientation) {
+-    return std::atan2(2.0f * (orientation.w * orientation.y + orientation.x * orientation.z),
+-                      1.0f - 2.0f * (orientation.y * orientation.y + orientation.z * orientation.z));
+-}
+-
++
+ mmvr::CameraFrame UpdateCamera(const mmvr::TrackingFrame& tracking) {
+     mmvr::SetWorldScaleFloorHeight(tracking.calibratedFloorEyeHeight);
+@@ -35,8 +30,11 @@
+     }
+-
++
+     const Vec3f& position = player->actor.world.pos;
+-    const float headYaw = TrackingYaw(tracking.head.orientation) - TrackingYaw(tracking.origin.orientation);
+-    const float viewYaw = std::remainder(-headYaw - tracking.snapYaw, 2.0f * 3.14159265358979323846f);
++    // Do not subtract head yaw here. mmvr::EyeProjectionMatrix applies the full head pose (relative to the
++    // tracking origin) on top of this view, so physical turns already rotate the picture; cancelling them in the
++    // anchor would lock the view to Link's facing. MM VR can cancel because its body follows the head; OoT's
++    // Link does not. Only the snap/smooth turn belongs in the anchor, added with the same sign MM VR uses.
++    const float viewYaw = std::remainder(tracking.snapYaw, 2.0f * 3.14159265358979323846f);
+     const s16 yaw = player->actor.shape.rot.y +
+                     static_cast<s16>(std::lround(viewYaw * (32768.0f / 3.14159265358979323846f)));
+     const float eyeX = position.x;
+@@ -92,7 +90,7 @@
+             cameraYawOffset = player->actor.shape.rot.y - Camera_GetInputDirYaw(camera);
+         }
+     }
+-    const mmvr::Pad pad = mmvr::ApplyHeadRelativeMovement(mmvr::ConsumePad());
++    const mmvr::Pad pad = mmvr::ApplyHeadRelativeMovement(mmvr::ConsumePad(), cameraYawOffset);
+     if (!pad.active) {
+         if (sPadActive) {
+             input->prev = sPreviousVrPad;

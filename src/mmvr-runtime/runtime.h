@@ -48,6 +48,7 @@ bool InteractionPointVisible(float x, float y, float z) noexcept;
 // True only after the compiled graphics backend calls the VR submission bridge.
 bool RendererBridgeObserved() noexcept;
 Pad ConsumePad() noexcept;
+Pad ApplyHeadRelativeMovement(Pad pad, int16_t gameCameraYawOffset) noexcept;
 bool PhysicalActionsAllowed() noexcept;
 // Explicit isolated native harness only; cannot enable without MMVR_NATIVE_TEST=1.
 void SetNativeTestTracking(bool enabled) noexcept;

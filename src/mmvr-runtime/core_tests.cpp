@@ -502,6 +502,19 @@ int main(){
     auto a=mmvr::EyeProjectionMatrix(left,fov,origin),b=mmvr::EyeProjectionMatrix(right,fov,origin);
     check(a.m[3][0]>b.m[3][0]);
     check(mmvr::Axis(.1f,0)==0&&mmvr::Axis(1,0)==85&&mmvr::CButtons(1,-1)==5);
+    {
+        const mmvr::Pad forward{0, 0, 85, true, 12, -13};
+        const auto turnedRight = mmvr::RotateMovementStick(forward, 1.57079632679f);
+        const auto turnedLeft = mmvr::RotateMovementStick(forward, -1.57079632679f);
+        check(turnedRight.x == 85 && turnedRight.y == 0 && turnedRight.rightX == 12 && turnedRight.rightY == -13);
+        check(turnedLeft.x == -85 && turnedLeft.y == 0);
+        const auto invalidYaw = mmvr::RotateMovementStick(forward, std::numeric_limits<float>::quiet_NaN());
+        check(invalidYaw.x == forward.x && invalidYaw.y == forward.y);
+        const mmvr::Pad diagonal{0, 60, 60, true};
+        const auto rotated = mmvr::RotateMovementStick(diagonal, .78539816339f);
+        check(std::abs(std::hypot(float(rotated.x), float(rotated.y)) -
+                       std::hypot(float(diagonal.x), float(diagonal.y))) < 1.5f);
+    }
     {mmvr::Pad p{0x8000,40,65,true,12,13};auto wheel=mmvr::ItemWheelInput(p,true);check(wheel.x==40&&wheel.y==65&&wheel.buttons==0&&wheel.rightX==0&&wheel.rightY==0&&wheel.active);
      mmvr::PadLatch selection;selection.Update(p);selection.ClearButtons();auto released=selection.Consume();check(released.x==40&&released.y==65&&released.buttons==0);selection.Update(p);check(selection.Consume().buttons==0x8000);}
     mmvr::PadLatch latch;latch.Update({0x8000,0,0,true});latch.Update({0,0,0,true});check(latch.Consume().buttons==0x8000);check(latch.Consume().buttons==0);

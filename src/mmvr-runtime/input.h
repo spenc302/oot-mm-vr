@@ -25,6 +25,15 @@ inline int8_t Axis(float value, float other) {
     const float scale = std::min(1.f, (length - .18f) / .82f) / length;
     return static_cast<int8_t>(std::lround(std::clamp(value * scale, -1.f, 1.f) * 85.f));
 }
+inline Pad RotateMovementStick(Pad pad, float yaw) {
+    if (!std::isfinite(yaw) || (pad.x == 0 && pad.y == 0))
+        return pad;
+    const float x = pad.x, y = pad.y;
+    const float cosine = std::cos(yaw), sine = std::sin(yaw);
+    pad.x = static_cast<int8_t>(std::clamp(std::lround(x * cosine + y * sine), -127L, 127L));
+    pad.y = static_cast<int8_t>(std::clamp(std::lround(y * cosine - x * sine), -127L, 127L));
+    return pad;
+}
 inline uint16_t CButtons(float x, float y) {
     return (x < -.55f ? 2 : 0) | (x > .55f ? 1 : 0) | (y > .55f ? 8 : 0) | (y < -.55f ? 4 : 0);
 }

@@ -297,6 +297,7 @@ bool visualPhysicalPushPoseValid = false;
 bool inputFocused = false;
 uint64_t originEpoch = 0, trackingEpoch = 0, systemRecenterEpoch = 0;
 float snapYaw = 0;
+float locomotionYaw = 0;
 bool snapLatched = false;
 int renderPass = 0; // 0 native, 1/2 eyes, 3 HUD
 XrPosef currentEye{}, currentOrigin{};
@@ -2438,6 +2439,8 @@ class TheaterRuntime {
                 }
                 if ((head.locationFlags & poseValid) == poseValid) {
                     tracking.head = head.pose;
+                    const float headYaw = PoseYaw(PoseMatrix(tracking.head)) - PoseYaw(PoseMatrix(tracking.origin));
+                    locomotionYaw = std::remainder(tracking.snapYaw - headYaw, 6.28318530717958647692f);
                     validHead = true;
                     for (int hand = 0; hand < 2; ++hand) {
                         XrActionStateGetInfo get{ XR_TYPE_ACTION_STATE_GET_INFO };
@@ -4008,6 +4011,12 @@ bool RendererBridgeObserved() noexcept {
 Pad ConsumePad() noexcept {
     std::lock_guard lock(padMutex);
     return padLatch.Consume();
+}
+Pad ApplyHeadRelativeMovement(Pad pad, int16_t gameCameraYawOffset) noexcept {
+    if (!pad.active || !cameraFrame.active || !FirstPersonRequested())
+        return pad;
+    constexpr float radiansPerBinang = 6.28318530717958647692f / 65536.0f;
+    return RotateMovementStick(pad, locomotionYaw + gameCameraYawOffset * radiansPerBinang);
 }
 void ResetNativeFramebufferDependencies() noexcept { nativeFramebufferDependency=false; }
 void RequireNativeFramebufferBeforeEyes() noexcept { nativeFramebufferDependency=true; }

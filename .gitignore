@@ -1,11 +1,6 @@
 # Upstream Ship of Harkinian is fetched by tools/fetch-upstream.sh and is NOT committed
-# (it has no license). Only our soh/soh/VR directory under it is tracked.
-/src/shipwright/*
-!/src/shipwright/soh/
-/src/shipwright/soh/*
-!/src/shipwright/soh/soh/
-/src/shipwright/soh/soh/*
-!/src/shipwright/soh/soh/VR/
+# (it has no license). The project patches are the source of truth for local upstream changes.
+/src/shipwright/
 build/
 run/
 toolchains/

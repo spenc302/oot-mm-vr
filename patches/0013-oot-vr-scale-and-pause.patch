@@ -1,0 +1,66 @@
+diff -ruN a/soh/soh/VR/OotVR.cpp b/soh/soh/VR/OotVR.cpp
+--- a/soh/soh/VR/OotVR.cpp
++++ b/soh/soh/VR/OotVR.cpp
+@@ -1,9 +1,11 @@
+ #include "OotVR.h"
+ 
+ #include "global.h"
++#include <cmath>
+ 
+ #ifdef MMVR_ENABLE
+ #include "runtime.h"
++#include "world_scale.h"
+ 
+ extern "C" PlayState* gPlayState;
+ 
+@@ -12,8 +14,15 @@
+ int sGameplayScene = -1;
+ OSContPad sPreviousVrPad{};
+ 
++float TrackingYaw(const XrQuaternionf& orientation) {
++    return std::atan2(2.0f * (orientation.w * orientation.y + orientation.x * orientation.z),
++                      1.0f - 2.0f * (orientation.y * orientation.y + orientation.z * orientation.z));
++}
++
+ mmvr::CameraFrame UpdateCamera(const mmvr::TrackingFrame& tracking) {
++    mmvr::SetWorldScaleFloorHeight(tracking.calibratedFloorEyeHeight);
+     mmvr::CameraFrame frame{};
++    frame.trackingTime = tracking.timeSeconds;
+     PlayState* play = gPlayState;
+     if (play == nullptr || play->activeCamera != CAM_ID_MAIN) {
+         return frame;
+@@ -26,7 +35,10 @@
+     }
+ 
+     const Vec3f& position = player->actor.world.pos;
+-    const s16 yaw = player->actor.shape.rot.y;
++    const float headYaw = TrackingYaw(tracking.head.orientation) - TrackingYaw(tracking.origin.orientation);
++    const float viewYaw = std::remainder(-headYaw - tracking.snapYaw, 2.0f * 3.14159265358979323846f);
++    const s16 yaw = player->actor.shape.rot.y +
++                    static_cast<s16>(std::lround(viewYaw * (32768.0f / 3.14159265358979323846f)));
+     const float eyeX = position.x;
+     const float eyeY = position.y + Player_GetHeight(player);
+     const float eyeZ = position.z;
+@@ -36,8 +48,9 @@
+     guLookAtF(frame.view.m, eyeX, eyeY, eyeZ, lookX, eyeY, lookZ, 0.0f, 1.0f, 0.0f);
+     frame.active = true;
+     frame.viewAddress = play->view.viewingPtr;
+-    frame.trackingScale = 1.0f;
+-    frame.trackingTime = tracking.timeSeconds;
++    // Same calibration MM VR uses: physical eye height maps to Link's standing height (form 4 = human).
++    frame.trackingScale = mmvr::WorldTrackingScale(mmvr::GetSettings(), 4, Player_GetHeight(player));
++    frame.bodyCorrection = mmvr::YawPose(0.0f); // identity; a zero matrix would collapse anything it multiplies
+     return frame;
+ }
+ 
+@@ -95,7 +108,9 @@
+ }
+ 
+ extern "C" void OotVR_SetGameplayScene(int gameplay) {
+-    const int nextScene = gameplay != 0;
++    // The pause menu keeps theater presentation; its screens are not built for the stereo world view.
++    const int nextScene = gameplay != 0 && gPlayState != nullptr && gPlayState->pauseCtx.state == 0 &&
++                          gPlayState->transitionMode == TRANS_MODE_OFF;
+     if (sGameplayScene == nextScene) {
+         return;
+     }

@@ -10,5 +10,5 @@ diff -ruN a/libultraship/cmake/dependencies/windows-vcpkg.cmake b/libultraship/c
 +	if (MMVR_ENABLE)
 +		list(APPEND LUS_VCPKG_PACKAGES openxr-loader)
 +	endif()
-+	vcpkg_install_packages(${LUS_VCPKG_PACKAGES})    
++	vcpkg_install_packages(${LUS_VCPKG_PACKAGES})
  endif()

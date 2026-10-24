@@ -243,7 +243,7 @@ inline constexpr SettingDefinition SettingDefinitions[] = {
     { "gVR.HandOffsetY", "Hand vertical offset", .03f, -.15f, .15f, .005f, "m" },
     { "gVR.HandOffsetZ", "Hand forward offset", 0, -.2f, .2f, .005f, "m" },
     { "gVR.SnapAngle", "Snap turn angle", 30, 15, 90, 15, "deg" },
-    { "gVR.SmoothTurning", "Smooth turning", 1, 0, 1, 1, "off/on" },
+    { "gVR.SmoothTurning", "Smooth turning", 0, 0, 1, 1, "off/on" },
     { "gVR.TurnSpeed", "Smooth turn speed", 200, 15, 720, 5, "deg/s" },
     { "gVR.HudWidth", "HUD width", 1.6f, .6f, 3, .05f, "m" },
     { "gVR.HudDistance", "HUD distance", 2, 1, 4, .1f, "m" },
